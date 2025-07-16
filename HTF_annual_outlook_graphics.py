@@ -80,34 +80,69 @@ def no_t_quad_enso(z):
     return (a * z **2) + (b * z) + c
 
 ##########################################################################################################
+all_stations_data = []
 
 for i in range(len(df)):
     
     #getting historical flood counts from API
-    station = df.loc[i,'Station_ID']
-
+# === Getting historical flood counts from API ===
+    station = df.loc[i, 'Station_ID']
     product = 'htf_met_year_annual'
-
     server = "https://api.tidesandcurrents.noaa.gov/dpapi/prod/webapi/htf/"
-
-    myurl = (server + product +'.json?station='+station)
+    myurl = f"{server}{product}.json?station={station}"
 
     urlResponse = requests.get(myurl)
-
-    content=urlResponse.json()
-
+    #print(myurl)
+    content = urlResponse.json()
     mydata = content['MetYearAnnualFloodCount']
 
-    # Make it a Dataframe
+    # Make it a DataFrame
     obs_df = pd.DataFrame(mydata)
-    obs_df=obs_df[obs_df['metYear']>1949]
-    if str(analysis_year) == str(2023):
-        print('Removing 2023 observations')
-        obs_df=obs_df[obs_df['metYear']<2023]
+    obs_df = obs_df[obs_df['metYear'] > 1949]
 
-    obs = obs_df.dropna(subset=['minCount'])
-    obs['HTF']='days per year'
-    data_start_year = obs['metYear'].iloc[0]
+    if str(analysis_year) == "2023":
+        print('Removing 2023 observations')
+        obs_df = obs_df[obs_df['metYear'] < 2023]
+
+    # Drop rows without minCount
+    obs_df = obs_df.dropna(subset=['minCount'])
+
+    # === Add Percent Completeness ===
+    def calculate_percent_completeness(row):
+        try:
+            year = int(row['metYear'])
+            nan_count = float(row['nanCount']) if pd.notna(row['nanCount']) else 0
+            days_in_year = 366 if isleap(year + 1) else 365  # MET year: May to April
+            if round(nan_count) >= days_in_year:
+                return None
+            completeness = round((days_in_year - nan_count) * 100 / days_in_year, 1)
+            return completeness
+        except:
+            return None
+
+    obs_df['Percent Completeness'] = obs_df.apply(calculate_percent_completeness, axis=1)
+
+    # === Blank values if completeness < 85 and minCount == 0 ===
+    cols_to_blank = ['majCount', 'modCount', 'minCount', 'Percent Completeness']
+
+    def blank_if_incomplete(row):
+        try:
+            if pd.notna(row['Percent Completeness']) and row['Percent Completeness'] < 85:
+                min_count = float(row['minCount']) if pd.notna(row['minCount']) else 0
+                if min_count == 0:
+                    for col in cols_to_blank:
+                        row[col] = None
+        except:
+            pass
+        return row
+
+    obs_df = obs_df.apply(blank_if_incomplete, axis=1)
+
+    # Optional label
+    obs_df['HTF'] = 'days per year'
+    data_start_year = obs_df['metYear'].iloc[0]
+
+
 
     ################################################################################
 
@@ -178,10 +213,10 @@ for i in range(len(df)):
         station_formula = station_df['no_t_quad_fit'].iloc[0]
         station_trend = station_df['avg19'].iloc[0]
         coefficients = ast.literal_eval(station_formula)
-        coefficients_avg = station_trend
+        coefficients_avg = float(station_trend)
     else:
         station_formula = station_df['avg19']
-        coefficients_avg = station_formula
+        coefficients_avg = float(station_formula)
 
     #######################################################################################
 
@@ -205,6 +240,7 @@ for i in range(len(df)):
         c = coefficients['x']
         f = coefficients['Intercept']
         y_vals_trend = quadratic(x_vals)
+        y_vals = None
     elif station_df['projectMethod'].iloc[0] == 'Linear With ENSO Sensitivity':
         a = coefficients['x']
         b = coefficients['z']
@@ -237,11 +273,32 @@ for i in range(len(df)):
     else:
         max_y_lim = round(obs_df['minCount'].max()/5)*5+10
 
+    # Determine projectMethodID and otherMethodID based on projectMethod
+    project_method = station_df['projectMethod'].iloc[0]
+    project_method_id = station_df['projectMethodID'].iloc[0]
+    other_method_id_map = {2: 1, 4: 3, 5: 6}
+
+    other_method_id = other_method_id_map.get(project_method_id, None)
+
+    # Create DataFrame with renamed columns and additional info
+    df_station = pd.DataFrame({
+        'station': obs_df.iloc[0]['stnId'],
+        'year': x_vals,
+        'Additional trendline': y_vals if y_vals is not None else [None] * data_length,
+        'Chosen trendline': y_vals_trend,
+        'projectMethod': project_method,
+        'projectMethodID': project_method_id,
+        'otherMethod': other_method if y_vals is not None else [None] * data_length,
+        'otherMethodID': other_method_id
+    })
+
+    all_stations_data.append(df_station)
+
     #######################################################################################
 
     plt.figure(figsize=(16, 8))
     bar_width = 0.7
-    plt.bar(obs['metYear'], obs['minCount'], color='lightskyblue',width=bar_width,label = 'Historical HTF days')
+    plt.bar(obs_df['metYear'], obs_df['minCount'], color='lightskyblue',width=bar_width,label = 'Historical HTF days')
 
     if station_df['projectMethod'].iloc[0] in ['Linear With ENSO Sensitivity','Quadratic With ENSO Sensitivity','No Temporal Trend with Linear ENSO Sensitivity','No Temporal Trend with Quadratic ENSO Sensitivity']:
         plt.fill_between(trend_only['metYear'], trend_only['Low_Pred'], trend_only['High_Pred'], color='black', step='mid', linewidth=7, label=other_method)
@@ -252,18 +309,18 @@ for i in range(len(df)):
         plt.fill_between(predict_df['nextYear'], predict_df['Low_Pred'], predict_df['High_Pred'], color='black', step='mid', linewidth=7, label=station_df['projectMethod'].iloc[0])
         plt.plot(x_vals, y_vals_trend, color='black', linewidth=2,alpha=0.5)
     # Set labels and title
-    plt.title('2024-25 Annual HTF Projection with Historical Context\n'+obs_df.iloc[0]['stnId']+' '+obs_df.iloc[0]['stnName'])
+    plt.title('2025-26 Annual HTF Projection with Historical Context\n'+obs_df.iloc[0]['stnId']+' '+obs_df.iloc[0]['stnName'])
 
     plt.xlabel('Years')
     plt.ylabel('Flood Count (days/yr)')
-    plt.xlim(data_start_year-2, 2025)   # Adjust x-axis limits if needed
+    plt.xlim(data_start_year-5, analysis_year+2)   # Adjust x-axis limits if needed
     plt.ylim(0,max_y_lim)   # Adjust y-axis limits as requested
     plt.legend(loc='upper left')
     fig_path=f'{data_dir}\\{analysis_year}_long_term_plots/'
     if not os.path.exists(fig_path):
       os.makedirs(fig_path)
     plt.savefig(fname=fig_path+station+'.png')
-  
+    y_vals = None
 print('Station graphs done')
 #########################################################################################
 
@@ -319,7 +376,7 @@ lat_2 = 45   # Second standard parallel (optional)
 ax1=plt.axes()
 ax2= plt.axes([0.12, 0.26, 0.16, 0.14])
 ax3= plt.axes([0.22, 0.26, 0.25, 0.09])
-ax1.set_title('Upper range of 2024-25 Outlook Predictions',size=20)
+ax1.set_title('Upper range of 2025-26 Outlook Predictions',size=20)
 map1=Basemap(ax=ax1,llcrnrlon=-122, llcrnrlat=17, urcrnrlon=-48.,urcrnrlat=47.,lon_0 = -96,lat_0 = 37,lat_1 = 33,projection='lcc',resolution='i')
 #map1.bluemarble()
 map1.drawlsmask(land_color='dimgray', ocean_color='k', lakes=True,zorder=1)
@@ -389,7 +446,7 @@ for spine in ax2.spines.values():
 for spine in ax3.spines.values():
     spine.set_color('red')
 plt.legend(loc='upper right', fontsize=10, edgecolor='white')
-plt.savefig(fname=f'{data_dir}\\{analysis_year}_map_upper_range_htf_annual_outlook.png')
+plt.savefig(fname=f'{data_dir}\\{analysis_year}_map_upper_range_htf_annual_outlook.png',bbox_inches='tight')
 
 #save complementary csv
 upper_pred_range_download = df[['Station_ID' ,'Lat','Lon','highConf',]]
@@ -457,7 +514,7 @@ lat_2 = 45   # Second standard parallel (optional)
 ax1=plt.axes()
 ax2= plt.axes([0.12, 0.26, 0.16, 0.14])
 ax3= plt.axes([0.22, 0.26, 0.25, 0.09])
-ax1.set_title('2024-25 Predicted Increases in High Tide Flooding since 2000',size=20)
+ax1.set_title('2025-26 Predicted Increases in High Tide Flooding since 2000',size=20)
 map1=Basemap(ax=ax1,llcrnrlon=-122, llcrnrlat=17, urcrnrlon=-48.,urcrnrlat=47.,lon_0 = -96,lat_0 = 37,lat_1 = 33,projection='lcc',resolution='i')
 #map1.bluemarble()
 map1.drawlsmask(land_color='dimgray', ocean_color='k', lakes=True,zorder=1)
@@ -526,7 +583,7 @@ for spine in ax2.spines.values():
 for spine in ax3.spines.values():
     spine.set_color('red')
 plt.legend(loc='upper right', fontsize=10, edgecolor='white')
-plt.savefig(fname=f'{data_dir}\\{analysis_year}_map_increase_htf_annual_outlook.png')
+plt.savefig(fname=f'{data_dir}\\{analysis_year}_map_increase_htf_annual_outlook.png',bbox_inches='tight')
 
 #save complementary csv
 diff_2000_download = df[['Station_ID' ,'Lat','Lon','diff_2000','mid_pred','pred_2k']]
@@ -709,7 +766,7 @@ for spine in ax2.spines.values():
 for spine in ax3.spines.values():
     spine.set_color('red')
 
-plt.savefig(fname=f'{data_dir}\\{analysis_year}_map_diff_enso_htf_annual_outlook.png')
+plt.savefig(fname=f'{data_dir}\\{analysis_year}_map_diff_enso_htf_annual_outlook.png',bbox_inches='tight')
 
 diff_enso_download = df[['Station_ID' ,'Lat','Lon','diff_enso','projectMethod']]
 diff_enso_download.to_csv(f'{data_dir}\\{analysis_year}_map_diff_enso_htf_annual_outlook.csv')
@@ -772,13 +829,19 @@ f1 = plt.figure(figsize=(10,7))
 ax1=f1.add_subplot(111)
 
 plt.boxplot(data,patch_artist=True,labels=labels)
-ax1.set_title(str(analysis_year)+"2024-25 HTF Annual Outlook by Region")
+ax1.set_title(str(analysis_year)+" HTF Annual Outlook by Region")
 ax1.set_ylabel('HTF days/year')
 plt.yticks(np.arange(0, 100, step=10))
 plt.grid()
 f1.savefig(fname=f'{data_dir}\\{analysis_year}_regional_htf_annual_outlook.png')
 regional_boxplot_download = df[['Station_ID' ,'Lat','Lon','Region','mid_pred']]
 regional_boxplot_download.to_csv(f'{data_dir}\\{analysis_year}_regional_htf_annual_outlook.csv')
+
+#################################################################################
+
+# Concatenate all stations into a single DataFrame and export
+result_df = pd.concat(all_stations_data, ignore_index=True)
+result_df.to_csv(f'{data_dir}\\{analysis_year}_trend_lines.csv')
 
 print('Regions graph done')
 print('End Script')
