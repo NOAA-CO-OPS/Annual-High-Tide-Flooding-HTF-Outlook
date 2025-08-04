@@ -3,6 +3,7 @@ import requests
 import datetime as dt
 import os
 import  configparser
+from calendar import isleap
 
 # %% Configuration file
 CONFIG_FILE = "config.cfg"
@@ -52,6 +53,48 @@ met_yr_df = met_yr_df.drop(columns=['count'])
 met_yr_df = met_yr_df.dropna(subset=['stnId'])
 
 met_yr_df = met_yr_df.reset_index(drop=True)
+
+
+def calculate_percent_completeness(row):
+    try:
+        year = int(row['metYear'])
+        nan_count = float(row['nanCount']) if pd.notna(row['nanCount']) else 0
+
+        # Met year spans May YEAR to April (YEAR + 1)
+        # So Feb of YEAR+1 determines leap day presence
+        days_in_year = 366 if isleap(year + 1) else 365
+
+        if round(nan_count) >= days_in_year:
+            return None  # leave blank if fully missing
+
+        completeness = round((days_in_year - nan_count) * 100 / days_in_year, 1)
+        return completeness
+    except:
+        return None
+
+
+
+
+met_yr_df['Percent Completeness'] = met_yr_df.apply(calculate_percent_completeness, axis=1)
+
+cols_to_blank = ['majCount', 'modCount', 'minCount', 'Percent Completeness']
+
+def blank_if_incomplete(row):
+    try:
+        if pd.notna(row['Percent Completeness']) and row['Percent Completeness'] < 85:
+            min_count = float(row['minCount']) if pd.notna(row['minCount']) else 0
+            if min_count == 0:
+                for col in cols_to_blank:
+                    row[col] = None
+    except:
+        pass
+    return row
+
+# Apply the blanking function to each row
+#met_yr_df = met_yr_df.apply(blank_if_incomplete, axis=1)
+
+
+
 
 # Saves HTF counts as a csv 
 

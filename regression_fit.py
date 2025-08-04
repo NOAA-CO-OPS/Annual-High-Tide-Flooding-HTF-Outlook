@@ -47,6 +47,8 @@ run_date = today.strftime("%m/%d/%Y")
 
 
 stn_df = pd.read_csv(stn_list)
+stn_df = stn_df.sort_values(by='NOAA_ID')
+stn_df = stn_df.reset_index(drop=True)
 
 # Creates a dataframe using the NOAA IDs for all stations on the station list specified in the config file
 
