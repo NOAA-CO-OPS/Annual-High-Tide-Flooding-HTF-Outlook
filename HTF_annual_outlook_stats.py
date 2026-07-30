@@ -257,14 +257,17 @@ HTF_Annual_outlook_station_stats=HTF_Annual_outlook_station_stats.drop(columns=[
 #4/25/2025 adding previous year statistics
 #read in enso info
 enso_oni = pd.read_csv(data_dir+'\\'+'annual_means.csv')
+# Filter the DataFrame to keep only columns that do NOT start with "Unnamed"
+enso_oni = enso_oni.loc[:, ~enso_oni.columns.str.contains('^Unnamed')]
+print(enso_oni)
 avg_file = pd.read_csv(data_dir+'\\'+'average_all_models.txt',header=None)
 #pull historic counts from data file
 all_obs_df = pd.read_csv(data_dir+'\\'+'met_historic_flood_cts.csv')
 all_obs_df['station_ID'] = all_obs_df['stnId'].astype(str).str[:7]
 forecast_avg = avg_file.iloc[0][0]
-enso_oni.loc[len(enso_oni)] = [int(met_year), np.nan, forecast_avg, np.nan]
+#enso_oni.loc[len(enso_oni)] = [int(met_year), np.nan, forecast_avg, np.nan]
 enso_oni = enso_oni['ONI Met Year'].groupby(enso_oni['Year']).mean()
-
+print(enso_oni)
 station_past = pd.DataFrame()
 
 for i in range(len(model_output)):

@@ -50,6 +50,7 @@ except:
     print(f"Seperate URL for June {run_year} does not exist; using URL for most current forecast (which may be the June {run_year} if the July forecast has not been published yet)")
     enso_html = requests.get('https://iri.columbia.edu/our-expertise/climate/forecasts/enso/current/?enso_tab=enso-sst_table').content
     enso_table = pd.read_html(enso_html)
+    print(enso_table)
 
 for df in enso_table:
     if df.iloc[0,0]=='Dynamical Models': # Find Dynamical Models Table

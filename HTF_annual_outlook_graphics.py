@@ -54,6 +54,8 @@ df = pd.read_csv(data_dir+'\\'+str(analysis_year)+'_HTF_Annual_Outlook_full_data
 df['Station_ID'] = df.stnID.str[:7]
 #annual historic enso data
 enso_oni = pd.read_csv(f'{data_dir}/annual_means.csv')
+enso_oni = enso_oni.loc[:, ~enso_oni.columns.str.contains('^Unnamed')]
+avg_file = pd.read_csv(data_dir+'\\'+'average_all_models.txt',header=None)
 #enso prediction
 avg_file = pd.read_csv(f'{data_dir}/average_all_models.txt',header=None)
 #add enso prediction to historical enso data
