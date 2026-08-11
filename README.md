@@ -23,9 +23,9 @@ The run_year parameter must be changed to the current year. This ensures the cod
 
 Change the Station List Name:
 
-The name of the station list file must be defined here. If the file is included in the same folder as the code, only the station name is needed (i.e., stn_list_file = HTF_Annual_Outlook_StationList_2024.csv). The NOAA station ID and its latitude and longitude are the needed fields from the station list.
+The name of the station list file must be defined here. If the file is included in the same folder as the code, only the station name is needed (i.e., stn_list_file = HTF_Annual_Outlook_StationList_2025.csv). The NOAA station ID and its latitude and longitude are the needed fields from the station list.
 
-If the station file is located in a different folder than the code, the full file path must be included along with the file name (i.e., stn_list_file = C:\HTF_Annual_Outlook_StationList_2024.csv)
+If the station file is located in a different folder than the code, the full file path must be included along with the file name (i.e., stn_list_file = C:\HTF_Annual_Outlook_StationList_2025.csv)
 
 Optional: Change Directories:
 If the default directories are not created and a different set of directories are going to be used, the work_dir, run_dir, and data_dir parameters should be changed to match the desired directory paths. Make sure to create the desired directory before running the code.
