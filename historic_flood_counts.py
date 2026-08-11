@@ -91,7 +91,7 @@ def blank_if_incomplete(row):
     return row
 
 # Apply the blanking function to each row
-#met_yr_df = met_yr_df.apply(blank_if_incomplete, axis=1)
+met_yr_df = met_yr_df.apply(blank_if_incomplete, axis=1)
 
 
 
