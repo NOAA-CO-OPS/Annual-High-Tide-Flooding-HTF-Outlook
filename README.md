@@ -15,7 +15,7 @@ conda activate ht_outlook
 
 The user will also need to make changes to the configuration file for the code, as detailed in the next section.
 
-## ***Modifying the Configuration aFile***:
+## ***Modifying the Configuration File***:
 The configuration file for the code will be downloaded along the rest of the code, and is named ‘config.cfg’. Two parameters must be changed, while changing the others is optional.
 Change the Run Year: 
 
@@ -23,9 +23,9 @@ The run_year parameter must be changed to the current year. This ensures the cod
 
 Change the Station List Name:
 
-The name of the station list file must be defined here. If the file is included in the same folder as the code, only the station name is needed (i.e., stn_list_file = HTF_Annual_Outlook_StationList_2024.csv). The NOAA station ID and its latitude and longitude are the needed fields from the station list.
+The name of the station list file must be defined here. If the file is included in the same folder as the code, only the station name is needed (i.e., stn_list_file = HTF_Annual_Outlook_StationList_2025.csv). The NOAA station ID and its latitude and longitude are the needed fields from the station list.
 
-If the station file is located in a different folder than the code, the full file path must be included along with the file name (i.e., stn_list_file = C:\HTF_Annual_Outlook_StationList_2024.csv)
+If the station file is located in a different folder than the code, the full file path must be included along with the file name (i.e., stn_list_file = C:\HTF_Annual_Outlook_StationList_2025.csv)
 
 Optional: Change Directories:
 If the default directories are not created and a different set of directories are going to be used, the work_dir, run_dir, and data_dir parameters should be changed to match the desired directory paths. Make sure to create the desired directory before running the code.
@@ -56,15 +56,15 @@ HTF_Annual_Outlook_full_data.csv: A more detailed output that includes all of th
 Generally, only the first file is utilized as part of the final results for the Annual High Tide Outlook. The full data file instead enables the next step of the process, running the graphics and statistics scripts. These files will be saved to the directory specified in the configuration file in the data_dir parameter. 
 
 ## ***HTF Annual Outlook Graphics*** 
-This script HTF_annual_outlook_graphics.py takes the results from the regression_fit.py and outputs graphics. The first plot is a long-term station plot containing historical annual observations (blue bars), historical trend (black line), historical trend with ENSO sensitivity (for applicable stations) (red line), next year's prediction from historical trend (black bar), and next year's prediction w/ ENSO sensitivity (red bar when applicable). Next the script outputs a series of maps with complementary data csv(s) to accompany them. The first map shows the upper range of 2024-25 Outlook Predictions, the second map shows 2024-25 predicted increases in HTF since 2000, and the third shows the impact of ENSO on the predicted HTF annual outlook.
+This script HTF_annual_outlook_graphics.py takes the results from the regression_fit.py and outputs graphics. The first plot is a long-term station plot containing historical annual observations (blue bars), historical trend (black line), historical trend with ENSO sensitivity (for applicable stations) (red line), next year's prediction from historical trend (black bar), and next year's prediction w/ ENSO sensitivity (red bar when applicable). Next the script outputs a series of maps with complementary data csv(s) to accompany them. The first map shows the upper range of the Met Year Outlook Predictions, the second map shows  predicted increases in HTF since 2000, and the third shows the impact of ENSO on the predicted HTF annual outlook.
 
 ## ***HTF Annual Outlook Statistics***
-This script HTF_annual_outlook_stats.py takes the results from the regression_fit.py and outputs two csv(s). The first is 2024_HTF_Annual_Outlook_station_stats.py which outputs different statistics on last years observations and the next year's prediction at each station. The second is 2024_HTF_Annual_Outlook_region.py which outputs summary statistics for each region [US (includes ALL stations), CONUS (continental US),  (Northeast), MID (Mid-Atlantic), SE (Southeast), EGC (Eastern Gulf Coast), WGC (Western Gulf Coast), SW (Southwest), NW (Northwest), AK (Alaska), CAR (Caribbean), and PAC (Pacific Islands)]
+This script HTF_annual_outlook_stats.py takes the results from the regression_fit.py and outputs two csv(s). The first is 2026_HTF_Annual_Outlook_station_stats.py which outputs different statistics on last years observations and the next year's prediction at each station. The second is 2026_HTF_Annual_Outlook_region.py which outputs summary statistics for each region [US (includes ALL stations), CONUS (continental US),  (Northeast), MID (Mid-Atlantic), SE (Southeast), EGC (Eastern Gulf Coast), WGC (Western Gulf Coast), SW (Southwest), NW (Northwest), AK (Alaska), CAR (Caribbean), and PAC (Pacific Islands)]
 
 # Interactive notebooks
 
 ## ***AnnualHTFoutlook_Exploration_Notebook***
-This is an interactive notebook to view results of the Annual Outlook both nationally and for individual stations. There are three required files which are included but can also be generated by the regression_fit.py. They are 2024_HTF_Annual_Outlook_full_data, HTF_Annual_Outlook_StationList_2024, and oni_annual_means_1950_2023.
+This is an interactive notebook to view results of the Annual Outlook both nationally and for individual stations. There are three required files which are included but can also be generated by the regression_fit.py. They are 2026_HTF_Annual_Outlook_full_data and oni_annual_means_1950_2025.
 
 ## ***SLR_Scenarios_APIretrieval_plotting***
 The projection of future sea levels that are shown in CO-OPS' [Relative Sea Level Trends](https://tidesandcurrents.noaa.gov/sltrends/sltrends.html) page were released in 2022 by the [U.S. interagency task force](https://oceanservice.noaa.gov/hazards/sealevelrise/sealevelrise-tech-report-sections.html) in preparation for the Fifth National Climate Assessment. The projections for 5 sea level change scenarios are expected to assist decision makers in responding to local relative sea level rise. 
